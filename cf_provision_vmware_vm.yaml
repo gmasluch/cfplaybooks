@@ -46,8 +46,8 @@
         provider_url: "{{ manageiq.api_url }}/api/providers/{{ provider_id }}"
 
     - name: provider_url - info
-        debug:
-          msg: "{{ provider_url }}"
+      debug:
+        msg: "{{ provider_url }}"
 
     - name: Refresh VMware provider in CloudForms
       uri:
