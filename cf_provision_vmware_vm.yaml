@@ -18,7 +18,7 @@
         name: "{{ vm_name }}"
         template: "{{ vcenter_template }}"
         datacenter: "{{ vcenter_datacenter }}"
-#        folder: "{{ vcenter_folder }}"
+        folder: "{{ vcenter_folder }}"
         state: present
         wait_for_ip_address: yes
         validate_certs: no
