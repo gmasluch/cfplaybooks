@@ -144,11 +144,13 @@
 #Play 2
 - name: Configure/customize VM
   hosts: "{{ hostvars['localhost']['newwm'].instance.ipv4 }}"
-  debug:
-    msg: "{{ hostvars['localhost']['newwm'].instance.ipv4 }}"
-
 
   tasks:
+    - name: debug task
+      debug:
+        msg: "{{ hostvars['localhost']['newwm'] }}"
+        msg: "{{ hostvars['localhost']['newwm'].instance.ipv4 }}"
+
     - name: Ensure Apache is at the latest version
       yum:
         name: httpd
