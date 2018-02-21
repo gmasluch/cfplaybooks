@@ -1,4 +1,7 @@
-- name: Create new VMware VM
+##################################################
+#Play 1
+
+- name: Create new VM from template
   hosts: localhost
   gather_facts: false
   connection: local
@@ -136,3 +139,18 @@
     - name: Check if the VM was successfully attached to service
       fail: msg="{{output.json.results[0].message}}"
       when: output.json.results[0].success == false
+
+##################################################
+#Play 2
+- name: Configure/customize VM
+  hosts: {{ newvm.instance.ipv4 }}
+
+  tasks:
+    - name: Ensure Apache is at the latest version
+      yum:
+        name: httpd
+        state: latest
+    - name: ensure apache is running
+      service:
+        name: httpd
+        state: started

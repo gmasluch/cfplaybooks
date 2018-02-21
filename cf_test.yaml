@@ -1,6 +1,6 @@
 - name: This is test playbook
   hosts: localhost
-#  gather_facts: true
+  gather_facts: true
 #  connection: local
 
 #  vars:
