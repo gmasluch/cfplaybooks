@@ -143,7 +143,10 @@
 ##################################################
 #Play 2
 - name: Configure/customize VM
-  hosts: "{{ hostvars['localhost']['newvm'].instance.ipv4 }}"
+  hosts: "{{ hostvars['localhost']['newwm'].instance.ipv4 }}"
+  debug:
+    msg: "{{ hostvars['localhost']['newwm'].instance.ipv4 }}"
+
 
   tasks:
     - name: Ensure Apache is at the latest version
