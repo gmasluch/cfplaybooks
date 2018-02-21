@@ -1,6 +1,3 @@
-##################################################
-#Play 1
-
 - name: Create new VM from template
   hosts: localhost
   gather_facts: false
@@ -140,16 +137,15 @@
       fail: msg="{{output.json.results[0].message}}"
       when: output.json.results[0].success == false
 
-##################################################
-#Play 2
-- name: Configure/customize VM
-  hosts: "{{ hostvars['localhost']['newwm'].instance.ipv4 }}"
+- name: customize VM
+  hosts: "{{ hostvars['localhost']['newvm'].instance.ipv4 }}"
 
   tasks:
     - name: debug task
       debug:
-        msg: "{{ hostvars['localhost']['newwm'] }}"
-        msg: "{{ hostvars['localhost']['newwm'].instance.ipv4 }}"
+        msg: "{{ hostvars['localhost']['newvm'] }}"
+      debug:
+        msg: "{{ hostvars['localhost']['newvm'].instance.ipv4 }}"
 
     - name: Ensure Apache is at the latest version
       yum:
