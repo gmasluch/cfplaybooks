@@ -144,12 +144,12 @@
     - debug: var=newvm_ip
 
 - name: customize VM
-  hosts: "{{ hostvars['localhost']['newvm_ip'] }}"
+  hosts: "{{hostvars['localhost']['newvm_ip']}}"
 
   tasks:
     - name: debug task
       debug:
-        msg: "{{ hostvars['localhost']['newvm_ip'] }}"
+        msg: "{{hostvars['localhost']['newvm_ip']}}"
 
     - name: Ensure Apache is at the latest version
       yum:
