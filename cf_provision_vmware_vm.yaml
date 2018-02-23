@@ -137,15 +137,19 @@
       fail: msg="{{output.json.results[0].message}}"
       when: output.json.results[0].success == false
 
+    - name: Register VM IP Address
+      set_fact:
+        newvm_ip: "{{ newvm.instance.ipv4 }}"
+
+    - debug: var=newvm_ip
+
 - name: customize VM
-  hosts: "{{ hostvars['localhost']['newvm'].instance.ipv4 }}"
+  hosts: "{{ hostvars['localhost']['newvm_ip'] }}"
 
   tasks:
     - name: debug task
       debug:
-        msg: "{{ hostvars['localhost']['newvm'] }}"
-      debug:
-        msg: "{{ hostvars['localhost']['newvm'].instance.ipv4 }}"
+        msg: "{{ hostvars['localhost']['newvm_ip'] }}"
 
     - name: Ensure Apache is at the latest version
       yum:
