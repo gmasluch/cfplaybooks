@@ -143,6 +143,10 @@
 
     - debug: var=newvm_ip
 
+    - name: Create in Mem inventory
+      add_host:
+        name: "{{ newvm_ip }}"
+        
 - name: customize VM
   hosts:
     localhost:
