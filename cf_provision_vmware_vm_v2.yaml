@@ -162,9 +162,10 @@
     - debug: var=vm_db_ip
 
 
-    - name: Create in Mem inventory
+    - name: Create in Mem inventory for VM App
       add_host:
         name: "{{ vm_app_ip }}"
+    - name: Create in Mem inventory for VM DB
       add_host:
         name: "{{ vm_db_ip }}"
 
