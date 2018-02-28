@@ -1,19 +1,23 @@
 - name: This is test playbook
   hosts: localhost
   gather_facts: true
-#  connection: local
-
-#  vars:
-#    wait_for_ssh: False
-#    provider_id: "{{ provider_id }}"
-#    max_retries: 9
-#    retry_interval: 20
+  connection: local
 
   tasks:
     - name: Show manageiq object
       debug:
         msg: "{{ manageiq }}"
 
-    - name: Show manageiq object
-      debug:
-        msg: "{{ manageiq }}"
+    - name: Register VM IP Addresses
+      set_fact:
+        vm_app_ip: "10.0.0.11"
+        vm_db_ip: "10.0.0.12"
+
+    - debug: var=vm_app_ip
+    - debug: var=vm_db_ip
+
+
+    - name: Create in Mem inventory
+      add_host:
+        name: "{{ vm_app_ip }}"
+        name: "{{ vm_db_ip }}"
