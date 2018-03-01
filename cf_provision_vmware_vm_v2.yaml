@@ -215,7 +215,7 @@
 
     - name: Ensure MariaDB is at the latest version
       yum:
-        name: {{ item }}
+        name: "{{ item }}"
         state: latest
       with_items:
         - mariadb
