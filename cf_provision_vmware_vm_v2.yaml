@@ -1,18 +1,26 @@
 - name: Create LAMP environment
   hosts: localhost
-  gather_facts: true
+  gather_facts: false
   connection: local
 
   vars:
     wait_for_ssh: False
-    provider_id: "{{ provider_id }}"
+#    provider_id: "{{ provider_id }}"
     max_retries: 9
     retry_interval: 20
 
   tasks:
+    - name: Set names for VMs
+      set_fact:
+        vm_app_name: "{{environment_name}}app{{environment_number}}"
+        vm_db_name: "{{environment_name}}db{{environment_number}}"
+
+    - debug: var=vm_app_name
+    - debug: var=vm_db_name
+
     - name: Create App VM (for Apache & PHP)
       vmware_guest:
-        name: "{{ vcenter_vm_app_name }}"
+        name: "{{ vm_app_name }}"
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
@@ -26,7 +34,7 @@
 
     - name: Create DB VM (for MariaDB)
       vmware_guest:
-        name: "{{ vcenter_vm_db_name }}"
+        name: "{{ vm_db_name }}"
         hostname: "{{ vcenter_hostname }}"
         username: "{{ vcenter_username }}"
         password: "{{ vcenter_password }}"
@@ -114,8 +122,8 @@
         status_code: 200
       register: output
       with_items:
-        - "{{ vcenter_vm_app_name }}"
-        - "{{ vcenter_vm_db_name }}"
+        - "{{ vm_app_name }}"
+        - "{{ vm_db_name }}"
 
     - name: Set the Service URL
       set_fact:
@@ -158,6 +166,7 @@
         vm_app_ip: "{{ vm_app.instance.ipv4 }}"
         vm_db_ip: "{{ vm_db.instance.ipv4 }}"
 
+
     - debug: var=vm_app_ip
     - debug: var=vm_db_ip
 
@@ -173,9 +182,12 @@
   hosts: "{{ hostvars['localhost']['vm_app_ip'] }}"
 
   tasks:
-#    - name: debug task
-#      debug:
-#        msg: "{{ hostvars['localhost']['newvm_ip'] }}"
+    - name: debug task
+      debug:
+        msg: "{{ hostvars['localhost']['vm_app_name'] }}"
+
+    - hostname:
+      name: "{{ hostvars['localhost']['vm_app_name'] }}"
 
     - name: Ensure Apache is at the latest version
       yum:
@@ -194,10 +206,20 @@
   hosts: "{{ hostvars['localhost']['vm_db_ip'] }}"
 
   tasks:
+    - name: debug task
+      debug:
+        msg: "{{ hostvars['localhost']['vm_db_name'] }}"
+
+    - hostname:
+      name: "{{ hostvars['localhost']['vm_db_name'] }}"
+
     - name: Ensure MariaDB is at the latest version
       yum:
-        name: mariadb
+        name: {{ item }}
         state: latest
+      with_items:
+        - mariadb
+        - mariadb-server
     - name: ensure MariaDB is running
       service:
         name: mariadb
