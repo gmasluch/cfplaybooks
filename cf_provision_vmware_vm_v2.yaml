@@ -186,8 +186,9 @@
       debug:
         msg: "{{ hostvars['localhost']['vm_app_name'] }}"
 
-    - hostname:
-      name: "{{ hostvars['localhost']['vm_app_name'] }}"
+    - name: set hostname
+      hostname:
+        name: "{{ hostvars['localhost']['vm_app_name'] }}"
 
     - name: Ensure Apache is at the latest version
       yum:
@@ -210,8 +211,9 @@
       debug:
         msg: "{{ hostvars['localhost']['vm_db_name'] }}"
 
-    - hostname:
-      name: "{{ hostvars['localhost']['vm_db_name'] }}"
+    - name: set hostname 
+      hostname:
+        name: "{{ hostvars['localhost']['vm_db_name'] }}"
 
     - name: Ensure MariaDB is at the latest version
       yum:
