@@ -1,0 +1,206 @@
+- name: Create LAMP environment
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars:
+    wait_for_ssh: False
+    max_retries: 9
+    retry_interval: 20
+
+  tasks:
+    - name: Set names for VMs
+      set_fact:
+        vm_app_name: "cust01{{environment_name}}app{{environment_number}}"
+        vm_db_name: "cust01{{environment_name}}db{{environment_number}}"
+
+    - debug: var=vm_app_name
+    - debug: var=vm_db_name
+
+    - name: Create App VM (for Apache & PHP)
+      vmware_guest:
+        name: "{{ vm_app_name }}"
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        template: "{{ vcenter_template }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ vcenter_folder }}"
+        state: present
+        wait_for_ip_address: yes
+        validate_certs: no
+      register: vm_app
+
+    - name: Create DB VM (for MariaDB)
+      vmware_guest:
+        name: "{{ vm_db_name }}"
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        template: "{{ vcenter_template }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        folder: "{{ vcenter_folder }}"
+        state: present
+        wait_for_ip_address: yes
+        validate_certs: no
+      register: vm_db
+
+    - name: Set the Provider URL
+      set_fact:
+        provider_url: "{{ manageiq.api_url }}/api/providers/{{ provider_id }}"
+
+    - name: Refresh VMware provider in CloudForms
+      uri:
+        url: "{{ provider_url }}"
+        method: POST
+        body:
+          action: refresh
+        body_format: json
+        validate_certs: False
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        status_code: 200
+      register: output
+
+    - name: Set the task href
+      set_fact:
+        task_url: "{{ output.json.task_href}}"
+
+    - name: Wait for the provider refresh to end
+      uri:
+        url: "{{ task_url }}"
+        method: GET
+        validate_certs: False
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        status_code: 200
+      register: task_result
+      until: task_result.json.state == 'Finished' or task_result.json.status == 'Error'
+      failed_when: task_result.json.status == 'Error'
+      retries: "{{max_retries}}"
+      delay: "{{retry_interval}}"
+
+#    - name: NewVM Registered data
+#      debug:
+#        msg: "{{newvm.instance}}"
+
+    - name: Lookup instances href
+      uri:
+        url: "{{ manageiq.api_url }}/api/vms?filter[]=name={{ item }}&expand=resources"
+        method: GET
+        body:
+          action: refresh
+        body_format: json
+        validate_certs: False
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        status_code: 200
+      register: output
+      with_items:
+        - "{{ vm_app_name }}"
+        - "{{ vm_db_name }}"
+
+    - name: Set the Service URL
+      set_fact:
+        svc_url: "/api/{{ manageiq.service }}"
+
+    - name: Initialize an empty list for vms
+      set_fact:
+        vms: []
+
+    - name: Append resource href to vms list
+      set_fact:
+        vms: "{{ vms }} + [ { 'href': svc_url, 'resource': { 'href': '/api/vms/{{ item.json.resources[0].id }}' } } ]"
+      with_items: "{{ output.results }}"
+
+    - debug: var=vms
+
+    - name: Register vms with the service
+      uri:
+        url: "{{ manageiq.api_url }}/api/services"
+        method: POST
+        body_format: json
+        body:
+          action: add_resource
+          resources: "{{ vms }}"
+        validate_certs: False
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        status_code: 200
+      register: output
+
+    - debug: var=output.json.results[0].success
+
+    - name: Check if the VM was successfully attached to service
+      fail: msg="{{output.json.results[0].message}}"
+      when: output.json.results[0].success == false
+
+    - name: Register VM IP Address
+      set_fact:
+        vm_app_ip: "{{ vm_app.instance.ipv4 }}"
+        vm_db_ip: "{{ vm_db.instance.ipv4 }}"
+
+
+    - debug: var=vm_app_ip
+    - debug: var=vm_db_ip
+
+
+    - name: Create in Mem inventory for VM App
+      add_host:
+        name: "{{ vm_app_ip }}"
+    - name: Create in Mem inventory for VM DB
+      add_host:
+        name: "{{ vm_db_ip }}"
+
+- name: customize app VM
+  hosts: "{{ hostvars['localhost']['vm_app_ip'] }}"
+
+  tasks:
+    - name: debug task
+      debug:
+        msg: "{{ hostvars['localhost']['vm_app_name'] }}"
+
+    - name: set hostname
+      hostname:
+        name: "{{ hostvars['localhost']['vm_app_name'] }}"
+
+    - name: Ensure Apache is at the latest version
+      yum:
+        name: httpd
+        state: latest
+    - name: Ensure PHP is at the latest version
+      yum:
+        name: php
+        state: latest
+    - name: ensure apache is running
+      service:
+        name: httpd
+        state: started
+
+- name: customize DB VM
+  hosts: "{{ hostvars['localhost']['vm_db_ip'] }}"
+
+  tasks:
+    - name: debug task
+      debug:
+        msg: "{{ hostvars['localhost']['vm_db_name'] }}"
+
+    - name: set hostname
+      hostname:
+        name: "{{ hostvars['localhost']['vm_db_name'] }}"
+
+    - name: Ensure MariaDB is at the latest version
+      yum:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - mariadb
+        - mariadb-server
+    - name: ensure MariaDB is running
+      service:
+        name: mariadb
+        state: started
